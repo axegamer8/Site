@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ... restante do código (model Colaborador, etc)
+
+model Colaborador {
+  id            Int            @id @default(autoincrement())
+  nome          String
+  email         String         @unique
+  centroCusto   String
+  status        String         @default("ATIVO") 
+  
+  equipamentos  Equipamento[]  
+  emprestimos   Emprestimo[]   
+  historico     Movimentacao[] 
+  
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Equipamento {
+  id            Int            @id @default(autoincrement())
+  categoria     String         
+  patrimonio    String?        @unique
+  modelo        String
+  sistemaOperacional String?
+  numeroSerie   String?
+  fornecedor    String?
+  valor         Float?         
+  status        String         @default("DISPONIVEL") 
+  
+  linha         String?
+  imei          String?
+  operadora     String?
+
+  sede          String?        
+
+  colaboradorId Int?
+  colaborador   Colaborador?   @relation(fields: [colaboradorId], references: [id])
+
+  historico     Movimentacao[]
+  emprestimos   Emprestimo[]
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Movimentacao {
+  id            Int            @id @default(autoincrement())
+  tipo          String         
+  
+  equipamentoId Int
+  equipamento   Equipamento    @relation(fields: [equipamentoId], references: [id])
+  
+  colaboradorId Int?
+  colaborador   Colaborador?   @relation(fields: [colaboradorId], references: [id])
+
+  data          DateTime       @default(now())
+  observacao    String?
+}
+
+model Emprestimo {
+  id            Int            @id @default(autoincrement())
+  
+  colaboradorId Int
+  colaborador   Colaborador    @relation(fields: [colaboradorId], references: [id])
+  
+  equipamentoId Int
+  equipamento   Equipamento    @relation(fields: [equipamentoId], references: [id])
+
+  dataEmprestimo DateTime      @default(now())
+  dataDevolucao  DateTime
+  emprestadoPor  String
+  devolveu       Boolean       @default(false)
+}

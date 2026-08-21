@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --------------------------------------------------
+// TABELA 1: COLABORADORES
+// --------------------------------------------------
+model Colaborador {
+  id            Int            @id @default(autoincrement())
+  nome          String
+  email         String         @unique
+  centroCusto   String
+  status        String         @default("ATIVO") // ATIVO ou DESLIGADO
+  
+  // Relações
+  equipamentos  Equipamento[]  // Equipamentos que estão com ele hoje
+  emprestimos   Emprestimo[]   // Empréstimos temporários
+  historico     Movimentacao[] // Histórico de tudo que já passou por ele
+  
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+// --------------------------------------------------
+// TABELA 2: EQUIPAMENTOS (Computadores, Celulares, Telas, etc)
+// --------------------------------------------------
+model Equipamento {
+  id            Int            @id @default(autoincrement())
+  categoria     String         // COMPUTADOR, CELULAR, TELA, PERIFERICO, BACKUP
+  patrimonio    String?        @unique
+  modelo        String
+  numeroSerie   String?
+  fornecedor    String?
+  valor         Float?         // Valor do aluguel (R$)
+  status        String         @default("DISPONIVEL") // EM_USO, DISPONIVEL, MANUTENÇÃO
+  
+  // Campos Específicos de Celular
+  linha         String?
+  imei          String?
+  operadora     String?
+
+  // Campos Específicos de Backup
+  sede          String?        // Belo Horizonte, São Paulo, Maringá
+
+  // Relação com quem está usando a máquina agora
+  colaboradorId Int?
+  colaborador   Colaborador?   @relation(fields: [colaboradorId], references: [id])
+
+  // Relações de Histórico e Empréstimos
+  historico     Movimentacao[]
+  emprestimos   Emprestimo[]
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+// --------------------------------------------------
+// TABELA 3: HISTÓRICO (Linha do Tempo)
+// --------------------------------------------------
+model Movimentacao {
+  id            Int            @id @default(autoincrement())
+  tipo          String         // ENTREGA, DEVOLUCAO, MANUTENCAO
+  
+  equipamentoId Int
+  equipamento   Equipamento    @relation(fields: [equipamentoId], references: [id])
+  
+  colaboradorId Int?
+  colaborador   Colaborador?   @relation(fields: [colaboradorId], references: [id])
+
+  data          DateTime       @default(now())
+  observacao    String?
+}
+
+// --------------------------------------------------
+// TABELA 4: EMPRÉSTIMOS TEMPORÁRIOS
+// --------------------------------------------------
+model Emprestimo {
+  id            Int            @id @default(autoincrement())
+  
+  colaboradorId Int
+  colaborador   Colaborador    @relation(fields: [colaboradorId], references: [id])
+  
+  equipamentoId Int
+  equipamento   Equipamento    @relation(fields: [equipamentoId], references: [id])
+
+  dataEmprestimo DateTime      @default(now())
+  dataDevolucao  DateTime
+  emprestadoPor  String
+  devolveu       Boolean       @default(false)
+}
